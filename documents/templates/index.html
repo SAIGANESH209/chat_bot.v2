@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Summarizer</title>
+</head>
+<body>
+    <h2>Upload a Document</h2>
+    <form id="uploadForm">
+        <input type="file" id="fileInput" required>
+        <button type="submit">Upload</button>
+    </form>
+    <p id="uploadResult"></p>
+
+    <h2>Ask a Question</h2>
+    <form id="qaForm">
+        <input type="text" id="questionInput" placeholder="Enter your question" required>
+        <button type="submit">Get Answer</button>
+    </form>
+    <p id="qaResult"></p>
+
+    <script>
+        let documentId = null;
+
+        document.getElementById("uploadForm").onsubmit = async function(event) {
+            event.preventDefault();
+            let formData = new FormData();
+            let fileInput = document.getElementById("fileInput").files[0];
+            formData.append("file", fileInput);
+
+            let response = await fetch("/api/documents/upload/", {
+                method: "POST",
+                body: formData
+            });
+
+            let result = await response.json();
+            if (result.document_id) {
+                documentId = result.document_id;
+                document.getElementById("uploadResult").innerText = "Document uploaded! Summary: " + result.summary;
+            } else {
+                document.getElementById("uploadResult").innerText = "Upload failed!";
+            }
+        };
+
+        document.getElementById("qaForm").onsubmit = async function(event) {
+            event.preventDefault();
+            let question = document.getElementById("questionInput").value;
+
+            if (!documentId) {
+                alert("Upload a document first!");
+                return;
+            }
+
+            let response = await fetch("/api/documents/qa/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ document_id: documentId, question: question })
+            });
+
+            let result = await response.json();
+            document.getElementById("qaResult").innerText = "Answer: " + result.answer;
+        };
+    </script>
+</body>
+</html>
